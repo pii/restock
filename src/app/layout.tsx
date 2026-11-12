@@ -10,7 +10,7 @@ const mono = JetBrains_Mono({ subsets: ["latin", "greek"], variable: "--font-jet
 
 export const metadata: Metadata = {
   title: { default: "Restock", template: "%s | Restock" },
-  description: "Track product stock at Greek stores and get notified on Discord.",
+  description: "Track product stock at Greek stores and get notified on Discord or Telegram.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

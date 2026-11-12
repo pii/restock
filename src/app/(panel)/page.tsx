@@ -13,6 +13,7 @@ import { formatInterval, timeAgo } from "@/lib/format";
 import { listWebhooks } from "@/lib/notifications";
 import { getSettings } from "@/lib/settings";
 import { listStores, storeInfo } from "@/lib/stores";
+import { listTelegramChats } from "@/lib/telegram";
 import { listTrackers, oldestCheckAt } from "@/lib/trackers";
 import { AddProductButton, AddProductProvider } from "./add-product-dialog";
 import { ProductsView } from "./products-view";
@@ -35,7 +36,7 @@ function loadDashboard() {
     now,
     trackers,
     stores: listStores().map(storeInfo),
-    hasWebhook: listWebhooks().some((h) => h.enabled),
+    canNotify: listWebhooks().some((h) => h.enabled) || listTelegramChats().some((c) => c.enabled),
     stats: {
       total: trackers.length,
       active: active.length,
@@ -66,7 +67,7 @@ function StatCard({ label, value, icon: Icon, footer }: { label: string; value: 
 
 export default async function ProductsPage() {
   await requireUser();
-  const { now, trackers, stores, hasWebhook, stats } = loadDashboard();
+  const { now, trackers, stores, canNotify, stats } = loadDashboard();
 
   const nextCheck =
     stats.nextInMinutes === null
@@ -98,7 +99,7 @@ export default async function ProductsPage() {
             <EmptyTitle>No products yet</EmptyTitle>
             <EmptyDescription>
               Add a product from {stores.map((s) => s.name).join(", ")} to start tracking its stock. You get a Discord
-              message when it changes.
+              or Telegram message when it changes.
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
@@ -138,11 +139,13 @@ export default async function ProductsPage() {
             />
           </div>
 
-          {!hasWebhook ? (
+          {!canNotify ? (
             <Alert>
               <BellOffIcon />
               <AlertTitle>Notifications are off</AlertTitle>
-              <AlertDescription>Add a Discord webhook to get a message when a product comes back in stock.</AlertDescription>
+              <AlertDescription>
+                Add a Discord webhook or a Telegram chat to get a message when a product comes back in stock.
+              </AlertDescription>
               <AlertAction>
                 <Button asChild variant="outline" size="sm">
                   <Link href="/settings#notifications">Set up</Link>

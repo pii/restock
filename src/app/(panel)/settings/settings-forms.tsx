@@ -2,18 +2,7 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { MoreHorizontalIcon, PlusIcon, SendIcon, Trash2Icon, WebhookIcon } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
+import { PlusIcon, WebhookIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -24,13 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -38,7 +20,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { timeAgo } from "@/lib/format";
 import {
   addWebhookAction,
   changePasswordAction,
@@ -50,6 +31,7 @@ import {
   testWebhookAction,
   type ActionResult,
 } from "../actions";
+import { DestinationMenu, LastDelivery } from "./destination-parts";
 
 // ---- Check interval ---------------------------------------------------------
 
@@ -158,7 +140,7 @@ export function NotificationRulesCard({
     <Card id="notifications" className="scroll-mt-20">
       <CardHeader>
         <CardTitle>Notifications</CardTitle>
-        <CardDescription>Which stock changes send a message to your Discord webhooks.</CardDescription>
+        <CardDescription>Which stock changes send a message to Discord and Telegram.</CardDescription>
       </CardHeader>
       <CardContent>
         <FieldGroup>
@@ -268,27 +250,13 @@ function WebhookRow({ hook, now }: { hook: WebhookView; now: number }) {
   const [enabled, setEnabled] = useState(hook.enabled);
   const [everyone, setEveryone] = useState(hook.mentionEveryone);
   const [pending, start] = useTransition();
-  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <TableRow>
       <TableCell className="pl-4 font-medium">{hook.name}</TableCell>
       <TableCell className="max-w-56 truncate font-mono text-xs text-muted-foreground">{hook.maskedUrl}</TableCell>
       <TableCell>
-        {hook.lastError ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Badge variant="outline" className="border-status-bad/25 bg-status-bad-bg text-status-bad">
-                Failed
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-72">{hook.lastError}</TooltipContent>
-          </Tooltip>
-        ) : hook.lastSentAt ? (
-          <span className="text-sm text-muted-foreground">{timeAgo(hook.lastSentAt, now)}</span>
-        ) : (
-          <span className="text-sm text-muted-foreground">Never</span>
-        )}
+        <LastDelivery at={hook.lastSentAt} error={hook.lastError} now={now} />
       </TableCell>
       <TableCell>
         <Tooltip>
@@ -329,56 +297,25 @@ function WebhookRow({ hook, now }: { hook: WebhookView; now: number }) {
         />
       </TableCell>
       <TableCell className="pr-4 text-right">
-        <DropdownMenu modal={false}>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" disabled={pending} aria-label={`Options for ${hook.name}`}>
-              <MoreHorizontalIcon />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem
-              onSelect={() =>
-                start(async () => {
-                  const r = await testWebhookAction(hook.id);
-                  if (r?.ok) toast.success("Test sent", { description: "Check your Discord channel." });
-                  else toast.error("Test failed", { description: r?.message });
-                })
-              }
-            >
-              <SendIcon />
-              Send test
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={() => setConfirmOpen(true)}>
-              <Trash2Icon />
-              Remove
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove this webhook?</AlertDialogTitle>
-              <AlertDialogDescription>
-                “{hook.name}” will stop getting stock alerts. The webhook itself stays in Discord.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-white hover:bg-destructive/90"
-                onClick={() =>
-                  start(async () => {
-                    await deleteWebhookAction(hook.id);
-                    toast(`Removed “${hook.name}”`);
-                  })
-                }
-              >
-                Remove
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DestinationMenu
+          name={hook.name}
+          disabled={pending}
+          onTest={() =>
+            start(async () => {
+              const r = await testWebhookAction(hook.id);
+              if (r?.ok) toast.success("Test sent", { description: "Check your Discord channel." });
+              else toast.error("Test failed", { description: r?.message });
+            })
+          }
+          removeTitle="Remove this webhook?"
+          removeDescription={<>“{hook.name}” will stop getting stock alerts. The webhook itself stays in Discord.</>}
+          onRemove={() =>
+            start(async () => {
+              await deleteWebhookAction(hook.id);
+              toast(`Removed “${hook.name}”`);
+            })
+          }
+        />
       </TableCell>
     </TableRow>
   );

@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/lib/auth";
 import { listWebhooks, maskWebhookUrl } from "@/lib/notifications";
 import { CHECK_INTERVAL_LIMITS, getSettings } from "@/lib/settings";
+import { listTelegramChats } from "@/lib/telegram";
 import {
   IntervalCard,
   NotificationRulesCard,
@@ -10,6 +11,7 @@ import {
   WebhooksCard,
   type WebhookView,
 } from "./settings-forms";
+import { TelegramChatsCard, type TelegramChatView } from "./telegram-forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -29,12 +31,23 @@ function loadSettings() {
         lastError: h.lastError,
       }),
     ),
+    // Same for Telegram: the bot token stays on the server.
+    telegramChats: listTelegramChats().map(
+      (c): TelegramChatView => ({
+        id: c.id,
+        name: c.name,
+        chatId: c.chatId,
+        enabled: c.enabled,
+        lastSentAt: c.lastSentAt,
+        lastError: c.lastError,
+      }),
+    ),
   };
 }
 
 export default async function SettingsPage() {
   const user = await requireUser();
-  const { now, settings, webhooks } = loadSettings();
+  const { now, settings, webhooks, telegramChats } = loadSettings();
 
   return (
     <>
@@ -50,6 +63,7 @@ export default async function SettingsPage() {
           notifyOnUnavailable={settings.notifyOnUnavailable}
         />
         <WebhooksCard webhooks={webhooks} now={now} />
+        <TelegramChatsCard chats={telegramChats} now={now} />
         <PasswordCard username={user.username} />
       </div>
     </>

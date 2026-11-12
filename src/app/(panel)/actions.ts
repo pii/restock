@@ -17,6 +17,17 @@ import { CHECK_INTERVAL_LIMITS, updateSettings } from "@/lib/settings";
 import { STATUS_TEXT } from "@/lib/status";
 import { getStore, StoreError } from "@/lib/stores";
 import {
+  addTelegramChat,
+  deleteTelegramChat,
+  findTelegramChats,
+  getTelegramChat,
+  isTelegramBotToken,
+  isTelegramChatId,
+  sendTelegramTest,
+  setTelegramChatEnabled,
+  type FoundChat,
+} from "@/lib/telegram";
+import {
   addTracker,
   deleteTracker,
   enabledTrackerIds,
@@ -171,6 +182,66 @@ export async function testWebhookAction(id: number): Promise<ActionResult> {
   revalidatePath("/settings");
   return result.ok
     ? { ok: true, message: "Test sent. Check your Discord channel." }
+    : { ok: false, message: result.error };
+}
+
+// ---- Telegram chats ---------------------------------------------------------
+
+const BOT_TOKEN_HINT = "That doesn't look like a bot token. It looks like 123456789:AAH… and comes from @BotFather.";
+
+export type FindChatsResult =
+  | { ok: true; botUsername: string; chats: FoundChat[] }
+  | { ok: false; message: string };
+
+/** Lists the chats that recently messaged the bot, so the user can pick one instead of typing its ID. */
+export async function findTelegramChatsAction(botToken: string): Promise<FindChatsResult> {
+  await requireUser();
+  const token = botToken.trim();
+  if (!isTelegramBotToken(token)) return { ok: false, message: BOT_TOKEN_HINT };
+  try {
+    return { ok: true, ...(await findTelegramChats(token)) };
+  } catch (err) {
+    return { ok: false, message: (err as Error).message };
+  }
+}
+
+export async function addTelegramChatAction(_prev: ActionResult, formData: FormData): Promise<ActionResult> {
+  await requireUser();
+  const name = String(formData.get("name") ?? "").trim() || "Telegram";
+  const token = String(formData.get("botToken") ?? "").trim();
+  const chatId = String(formData.get("chatId") ?? "").trim();
+  if (!isTelegramBotToken(token)) return { ok: false, message: BOT_TOKEN_HINT };
+  if (!isTelegramChatId(chatId)) {
+    return {
+      ok: false,
+      message: "Enter the chat ID (a number such as 123456789 or -1001234567890) or a public channel's @name. Find fills it in for you.",
+    };
+  }
+  addTelegramChat(name.slice(0, 60), token, chatId);
+  revalidatePath("/settings");
+  return { ok: true, message: `Added “${name}”. Send a test to confirm it works.` };
+}
+
+export async function setTelegramChatEnabledAction(id: number, enabled: boolean): Promise<void> {
+  await requireUser();
+  setTelegramChatEnabled(id, enabled);
+  revalidatePath("/settings");
+}
+
+export async function deleteTelegramChatAction(id: number): Promise<void> {
+  await requireUser();
+  deleteTelegramChat(id);
+  revalidatePath("/settings");
+}
+
+export async function testTelegramChatAction(id: number): Promise<ActionResult> {
+  await requireUser();
+  const chat = getTelegramChat(id);
+  if (!chat) return { ok: false, message: "That chat no longer exists." };
+  const result = await sendTelegramTest(chat);
+  revalidatePath("/settings");
+  return result.ok
+    ? { ok: true, message: "Test sent. Check the Telegram chat." }
     : { ok: false, message: result.error };
 }
 

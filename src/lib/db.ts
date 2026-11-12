@@ -79,6 +79,19 @@ const MIGRATIONS: string[] = [
   `
   ALTER TABLE webhooks ADD COLUMN mention_everyone INTEGER NOT NULL DEFAULT 0;
   `,
+  // Telegram chats that get alert messages from your own bot.
+  `
+  CREATE TABLE telegram_chats (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    bot_token TEXT NOT NULL,
+    chat_id TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    last_sent_at INTEGER,
+    last_error TEXT,
+    created_at INTEGER NOT NULL
+  );
+  `,
 ];
 
 function migrate(db: Database.Database) {

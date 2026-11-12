@@ -1,7 +1,7 @@
 # Restock
 
 Restock keeps an eye on products at Greek online stores and sends you a
-Discord message as soon as one comes back in stock.
+Discord or Telegram message as soon as one comes back in stock.
 
 It works with **Germanos**, **Kotsovolos**, **Plaisio** and **Public**.
 
@@ -33,7 +33,12 @@ Then change the password: click your name at the bottom left, choose
 **Settings**, and fill in **Password**. A yellow banner reminds you until you
 do.
 
-### 2. Connect Discord
+### 2. Connect Discord or Telegram
+
+Restock can send its alerts to Discord, Telegram or both. Set up the one you
+use; you can skip the other.
+
+#### Discord
 
 Restock sends its alerts to a Discord channel. For that it needs the
 channel's **webhook link**, which starts with
@@ -49,6 +54,24 @@ your Discord server for it.
    should appear in your Discord channel within a few seconds.
 
 Keep the link private: anyone who has it can post in that channel.
+
+#### Telegram
+
+On Telegram, alerts come from your own bot. Making one takes a minute:
+
+1. In Telegram, open [@BotFather](https://t.me/BotFather) and send `/newbot`.
+   Choose a name and a username for your bot. BotFather replies with a
+   **token** that looks like `123456789:AAH…`.
+2. Open your new bot (BotFather sends you its link) and press **Start**. To
+   get alerts in a group instead, add the bot to the group.
+3. In Restock, click your name at the bottom left and choose **Settings**.
+4. In **Telegram chats**, click **Add chat** and paste the token.
+5. Click **Find**. Restock lists the chats where you pressed Start or added the
+   bot; pick yours. Then click **Add chat**.
+6. Click the **⋯** button next to it and choose **Send test**. A test message
+   should appear in Telegram within a few seconds.
+
+Keep the token private: anyone who has it can control your bot.
 
 ### 3. Add a product
 
@@ -68,7 +91,8 @@ Add as many products as you like.
 
 Restock now checks every product every 5 minutes, even when the page is
 closed, as long as Restock itself is running. When a product comes back in
-stock, you get a Discord message with its price and a link to buy it.
+stock, you get a Discord or Telegram message with its price and a link to buy
+it.
 
 ## Everyday use
 
@@ -111,21 +135,25 @@ Click your name at the bottom left and choose **Settings**.
 - **Check interval**: how often products are checked (every 5 minutes by
   default). Shorter means faster alerts but more visits to the stores.
 - **Notifications**: whether you get a message when a product comes back in
-  stock (on by default) and when it sells out (off by default).
+  stock (on by default) and when it sells out (off by default). These apply
+  to Discord and Telegram alike.
 - **Discord webhooks**: add more channels, send a test message, switch one off
   or remove it. The **@everyone** switch makes back-in-stock alerts to that
   channel ping everyone. "Sold out" messages never ping. With the switch on,
   the test message pings too, so you can check that it works.
+- **Telegram chats**: add more chats, send a test message, switch one off or
+  remove it. Back-in-stock messages make a sound; "sold out" messages arrive
+  silently.
 - **Password**: change your password.
 
 You can also sign out from the same menu.
 
 ## Your data
 
-Everything Restock knows (your products, settings and webhooks) is saved in the
-`data` folder inside the project. To back it up, stop Restock and copy that
-folder. To start over from scratch, stop Restock and delete it; you'll sign in
-with admin / admin again.
+Everything Restock knows (your products, settings, webhooks and Telegram
+details) is saved in the `data` folder inside the project. To back it up, stop
+Restock and copy that folder. To start over from scratch, stop Restock and
+delete it; you'll sign in with admin / admin again.
 
 ## For developers
 

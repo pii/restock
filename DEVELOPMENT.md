@@ -112,6 +112,30 @@ on a home network works.
   scheduled check and a "Check now" on the same product can't both send the
   same notification.
 
+## Notifications
+
+`notifyAvailabilityChange()` in `src/lib/notifications.ts` sends each stock
+change to Discord and Telegram at once. Each records its own last delivery and
+error per destination (shown in Settings), so one failing never stops the
+other.
+
+- **Discord** (`src/lib/notifications.ts`): webhook posts with an embed. Only
+  back-in-stock alerts may ping `@everyone`, and only for webhooks with that
+  switch on.
+- **Telegram messages** (`src/lib/telegram.ts`): the user's own bot, through
+  the Bot API's `sendMessage` with HTML formatting, the product picture as a
+  small link preview (`link_preview_options`) and an "Open on <store>" button.
+  Sold-out alerts are sent with `disable_notification`. The bot token stays on
+  the server; Settings only gets the chat ID.
+  - **Find** in the Add chat dialog calls `getMe` and `getUpdates` to list the
+    chats that pressed Start or added the bot in the last 24 hours. Reading
+    updates without an `offset` doesn't use them up. It must not pass
+    `allowed_updates`, which would change the bot's settings. A bot with a
+    webhook set answers `getUpdates` with 409, and the user types the ID.
+  - When a group is upgraded to a supergroup, Telegram answers with
+    `migrate_to_chat_id`; the new ID is saved and the message resent.
+  - A 429 is retried once after `retry_after` (at most 10 s).
+
 ## Adding a store
 
 1. Create `src/lib/stores/<store>.ts` exporting an object that implements

@@ -2,6 +2,7 @@ import "server-only";
 import { getDb } from "./db";
 import { formatPrice } from "./format";
 import { STATUS_TEXT, STATUS_TONE, type StatusTone } from "./status";
+import { notifyTelegram } from "./telegram";
 import type { Tracker } from "./trackers";
 
 // ---- Webhook storage --------------------------------------------------------
@@ -205,7 +206,7 @@ export async function sendTestMessage(hook: Webhook): Promise<{ ok: true } | { o
   }
 }
 
-export async function notifyAvailabilityChange(tracker: Tracker, storeName: string): Promise<void> {
+async function notifyDiscord(tracker: Tracker, storeName: string): Promise<void> {
   const nowAvailable = tracker.available === true;
   const statusText = STATUS_TEXT[tracker.status];
   const headline = nowAvailable
@@ -244,4 +245,14 @@ export async function notifyAvailabilityChange(tracker: Tracker, storeName: stri
       },
     ],
   }, { ping: nowAvailable });
+}
+
+// ---- All channels -----------------------------------------------------------
+
+/**
+ * Sends a stock change to Discord and Telegram. Each channel records its own
+ * failures, so one failing never stops the other.
+ */
+export async function notifyAvailabilityChange(tracker: Tracker, storeName: string): Promise<void> {
+  await Promise.all([notifyDiscord(tracker, storeName), notifyTelegram(tracker, storeName)]);
 }

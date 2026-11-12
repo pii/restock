@@ -92,6 +92,11 @@ const MIGRATIONS: string[] = [
     created_at INTEGER NOT NULL
   );
   `,
+  // Per-product switch for stock alerts. Products keep being checked either
+  // way; existing ones keep getting alerts.
+  `
+  ALTER TABLE trackers ADD COLUMN notify INTEGER NOT NULL DEFAULT 1;
+  `,
 ];
 
 function migrate(db: Database.Database) {

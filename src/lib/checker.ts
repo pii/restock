@@ -52,10 +52,10 @@ export async function checkTracker(id: number): Promise<CheckOutcome> {
 
   if (availabilityChanged) {
     const settings = getSettings();
-    const wanted = updated.available ? settings.notifyOnAvailable : settings.notifyOnUnavailable;
-    console.info(
-      `[checker] ${store.name} "${updated.name}": ${previousStatus} -> ${updated.status}${wanted ? " (notifying)" : ""}`,
-    );
+    const wanted =
+      updated.notify && (updated.available ? settings.notifyOnAvailable : settings.notifyOnUnavailable);
+    const note = wanted ? " (notifying)" : updated.notify ? "" : " (alerts off for this product)";
+    console.info(`[checker] ${store.name} "${updated.name}": ${previousStatus} -> ${updated.status}${note}`);
     if (wanted) await notifyAvailabilityChange(updated, store.name);
   }
 

@@ -104,6 +104,10 @@ it.
 - **Switch between cards and a list** with the two buttons at the right of the
   filters.
 - **Check a product right now** with its circular-arrows button.
+- **Turn alerts off for one product** with its bell button. It's still checked
+  and its status stays up to date, but you get no messages about it. A
+  crossed-out bell shows which products have alerts off; click it to turn them
+  back on.
 - The **⋯** button lets you open the product on the store's website, pause or
   resume checking it, or remove it. *View API response* shows the raw data the
   store sent; you only need it for troubleshooting.

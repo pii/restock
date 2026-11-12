@@ -17,7 +17,7 @@ import { formatPrice, timeAgo } from "@/lib/format";
 import type { StoreInfo } from "@/lib/stores";
 import type { Tracker } from "@/lib/trackers";
 import { cn } from "@/lib/utils";
-import { CheckNowButton, ProductMenu, type TrackerRef } from "./tracker-actions";
+import { AlertsToggle, CheckNowButton, ProductMenu, type TrackerRef } from "./tracker-actions";
 
 type StatusFilter = "all" | "available" | "unavailable" | "paused";
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
@@ -75,6 +75,7 @@ export function ProductsView({ trackers, stores, now }: { trackers: Tracker[]; s
     id: t.id,
     name: t.name,
     enabled: t.enabled,
+    notify: t.notify,
     productUrl: t.productUrl,
     storeId: t.storeId,
     storeName: storesById.get(t.storeId)?.name ?? t.storeId,
@@ -263,7 +264,10 @@ function ProductCard({
               <span className="text-xs text-muted-foreground">Checked {timeAgo(t.lastCheckedAt, now)}</span>
             )}
           </div>
-          <CheckNowButton tracker={refFor} />
+          <div className="flex shrink-0 items-center gap-1">
+            <AlertsToggle tracker={refFor} />
+            <CheckNowButton tracker={refFor} />
+          </div>
         </div>
       </div>
     </Card>
@@ -291,7 +295,7 @@ function ProductTable({
             <TableHead>Status</TableHead>
             <TableHead className="text-right">Price</TableHead>
             <TableHead>Last check</TableHead>
-            <TableHead className="w-24 pr-4">
+            <TableHead className="w-32 pr-4">
               <span className="sr-only">Actions</span>
             </TableHead>
           </TableRow>
@@ -338,6 +342,7 @@ function ProductTable({
                 </TableCell>
                 <TableCell className="pr-4">
                   <div className="flex items-center justify-end gap-1">
+                    <AlertsToggle tracker={ref} />
                     <CheckNowButton tracker={ref} />
                     <ProductMenu tracker={ref} />
                   </div>

@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
+  BellIcon,
+  BellOffIcon,
   BracesIcon,
   ExternalLinkIcon,
   MoreHorizontalIcon,
@@ -31,13 +33,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { checkAllAction, checkTrackerAction, deleteTrackerAction, setTrackerEnabledAction } from "./actions";
+import {
+  checkAllAction,
+  checkTrackerAction,
+  deleteTrackerAction,
+  setTrackerEnabledAction,
+  setTrackerNotifyAction,
+} from "./actions";
 import { RawResponseDialog } from "./raw-response-dialog";
 
 export type TrackerRef = {
   id: number;
   name: string;
   enabled: boolean;
+  notify: boolean;
   productUrl: string;
   storeId: string;
   storeName: string;
@@ -94,6 +103,44 @@ export function CheckNowButton({ tracker, className }: { tracker: TrackerRef; cl
         </Button>
       </TooltipTrigger>
       <TooltipContent>Check now</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Bell button that turns stock alerts for one product on or off. */
+export function AlertsToggle({ tracker, className }: { tracker: TrackerRef; className?: string }) {
+  // Flips right away; falls back to the saved value if saving fails.
+  const [notify, setNotify] = useOptimistic(tracker.notify);
+  const [, start] = useTransition();
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          className={className}
+          aria-pressed={notify}
+          aria-label={`Alerts for “${tracker.name}”`}
+          onClick={() =>
+            start(async () => {
+              const next = !notify;
+              setNotify(next);
+              try {
+                await setTrackerNotifyAction(tracker.id, next);
+                toast(next ? `Alerts on for “${tracker.name}”` : `Alerts off for “${tracker.name}”`, {
+                  description: next ? undefined : "It's still checked, but no messages are sent about it.",
+                });
+              } catch {
+                toast.error("Couldn't save that setting");
+              }
+            })
+          }
+        >
+          {notify ? <BellIcon className="text-muted-foreground" /> : <BellOffIcon />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{notify ? "Alerts on. Click to turn them off." : "Alerts off. Click to turn them on."}</TooltipContent>
     </Tooltip>
   );
 }

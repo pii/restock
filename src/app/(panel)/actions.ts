@@ -32,6 +32,7 @@ import {
   deleteTracker,
   enabledTrackerIds,
   setTrackerEnabled,
+  setTrackerNotify,
 } from "@/lib/trackers";
 
 export type ActionResult = { ok: boolean; message: string } | null;
@@ -68,6 +69,13 @@ export async function checkAllAction(): Promise<ActionResult> {
 export async function setTrackerEnabledAction(id: number, enabled: boolean): Promise<void> {
   await requireUser();
   setTrackerEnabled(id, enabled);
+  revalidatePath("/");
+}
+
+/** Turns stock alerts for one product on or off; it keeps being checked either way. */
+export async function setTrackerNotifyAction(id: number, notify: boolean): Promise<void> {
+  await requireUser();
+  setTrackerNotify(id, notify);
   revalidatePath("/");
 }
 

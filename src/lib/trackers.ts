@@ -13,6 +13,8 @@ export type Tracker = {
   variant: string | null;
   imageUrl: string | null;
   enabled: boolean;
+  /** Send stock alerts for this product. Checks run either way. */
+  notify: boolean;
   status: StockStatus;
   statusLabel: string | null;
   available: boolean | null;
@@ -34,6 +36,7 @@ type TrackerRow = {
   variant: string | null;
   image_url: string | null;
   enabled: number;
+  notify: number;
   status: string;
   status_label: string | null;
   available: number | null;
@@ -56,6 +59,9 @@ function toTracker(r: TrackerRow): Tracker {
     variant: r.variant,
     imageUrl: r.image_url,
     enabled: r.enabled === 1,
+    // Anything but an explicit 0 means on, so a database that hasn't run the
+    // migration yet (a dev server started before it) still sends alerts.
+    notify: r.notify !== 0,
     status: parseStatus(r.status),
     statusLabel: r.status_label,
     available: r.available === null ? null : r.available === 1,
@@ -124,6 +130,10 @@ export function addTracker(storeId: string, v: ProductVariant): boolean {
 
 export function setTrackerEnabled(id: number, enabled: boolean): void {
   getDb().prepare("UPDATE trackers SET enabled = ? WHERE id = ?").run(enabled ? 1 : 0, id);
+}
+
+export function setTrackerNotify(id: number, notify: boolean): void {
+  getDb().prepare("UPDATE trackers SET notify = ? WHERE id = ?").run(notify ? 1 : 0, id);
 }
 
 export function deleteTracker(id: number): void {

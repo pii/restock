@@ -24,6 +24,7 @@ function loadSettings() {
         name: h.name,
         maskedUrl: maskWebhookUrl(h.url),
         enabled: h.enabled,
+        mentionEveryone: h.mentionEveryone,
         lastSentAt: h.lastSentAt,
         lastError: h.lastError,
       }),

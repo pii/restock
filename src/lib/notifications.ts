@@ -11,6 +11,8 @@ export type Webhook = {
   name: string;
   url: string;
   enabled: boolean;
+  /** Ping @everyone in back-in-stock alerts (and test messages). */
+  mentionEveryone: boolean;
   lastSentAt: number | null;
   lastError: string | null;
 };
@@ -20,6 +22,7 @@ type WebhookRow = {
   name: string;
   url: string;
   enabled: number;
+  mention_everyone: number;
   last_sent_at: number | null;
   last_error: string | null;
 };
@@ -30,6 +33,7 @@ function toWebhook(r: WebhookRow): Webhook {
     name: r.name,
     url: r.url,
     enabled: r.enabled === 1,
+    mentionEveryone: r.mention_everyone === 1,
     lastSentAt: r.last_sent_at,
     lastError: r.last_error,
   };
@@ -46,10 +50,14 @@ export function getWebhook(id: number): Webhook | null {
   return row ? toWebhook(row) : null;
 }
 
-export function addWebhook(name: string, url: string): void {
+export function addWebhook(name: string, url: string, mentionEveryone = false): void {
   getDb()
-    .prepare("INSERT INTO webhooks (name, url, enabled, created_at) VALUES (?, ?, 1, ?)")
-    .run(name, url, Date.now());
+    .prepare("INSERT INTO webhooks (name, url, enabled, mention_everyone, created_at) VALUES (?, ?, 1, ?, ?)")
+    .run(name, url, mentionEveryone ? 1 : 0, Date.now());
+}
+
+export function setWebhookMentionEveryone(id: number, mentionEveryone: boolean): void {
+  getDb().prepare("UPDATE webhooks SET mention_everyone = ? WHERE id = ?").run(mentionEveryone ? 1 : 0, id);
 }
 
 export function setWebhookEnabled(id: number, enabled: boolean): void {
@@ -143,12 +151,25 @@ async function postToDiscord(url: string, payload: DiscordPayload, retry = true)
   }
 }
 
-async function broadcast(payload: DiscordPayload): Promise<void> {
+/**
+ * Adds an @everyone ping in front of the message text. Discord only pings when
+ * allowed_mentions permits it; by default every message here allows none.
+ */
+function withEveryonePing(payload: DiscordPayload): DiscordPayload {
+  return {
+    ...payload,
+    content: `@everyone ${payload.content ?? ""}`.trim().slice(0, 2000),
+    allowed_mentions: { parse: ["everyone"] },
+  };
+}
+
+/** Sends to every enabled webhook. `ping` lets webhooks with @everyone turned on mention it. */
+async function broadcast(payload: DiscordPayload, { ping }: { ping: boolean }): Promise<void> {
   const hooks = listWebhooks().filter((h) => h.enabled);
   await Promise.all(
     hooks.map(async (hook) => {
       try {
-        await postToDiscord(hook.url, payload);
+        await postToDiscord(hook.url, ping && hook.mentionEveryone ? withEveryonePing(payload) : payload);
         recordDelivery(hook.id, null);
       } catch (err) {
         const message = (err as Error).message;
@@ -161,16 +182,20 @@ async function broadcast(payload: DiscordPayload): Promise<void> {
 
 export async function sendTestMessage(hook: Webhook): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    await postToDiscord(hook.url, {
+    const test: DiscordPayload = {
       embeds: [
         {
           title: "Test notification",
-          description: `This channel will get stock alerts from Restock (webhook "${hook.name}").`,
+          description: hook.mentionEveryone
+            ? `This channel will get stock alerts from Restock (webhook "${hook.name}"). Back-in-stock alerts mention @everyone.`
+            : `This channel will get stock alerts from Restock (webhook "${hook.name}").`,
           color: TONE_COLOR.wait,
           timestamp: new Date().toISOString(),
         },
       ],
-    });
+    };
+    // Ping in the test too, so you can check that @everyone works in this channel.
+    await postToDiscord(hook.url, hook.mentionEveryone ? withEveryonePing({ ...test, content: "Test notification" }) : test);
     recordDelivery(hook.id, null);
     return { ok: true };
   } catch (err) {
@@ -201,6 +226,7 @@ export async function notifyAvailabilityChange(tracker: Tracker, storeName: stri
   }
   if (tracker.variant) fields.push({ name: "Option", value: tracker.variant, inline: true });
 
+  // @everyone pings only for back-in-stock alerts, never for "sold out".
   await broadcast({
     content: `${headline}: ${tracker.name}`.slice(0, 2000),
     embeds: [
@@ -217,5 +243,5 @@ export async function notifyAvailabilityChange(tracker: Tracker, storeName: stri
         timestamp: new Date().toISOString(),
       },
     ],
-  });
+  }, { ping: nowAvailable });
 }

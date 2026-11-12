@@ -42,8 +42,9 @@ your Discord server for it.
 
 1. Click your name at the bottom left and choose **Settings**.
 2. In **Discord webhooks**, click **Add webhook**.
-3. Type a name you'll recognise (for example "My alerts"), paste the link and
-   click **Add webhook**.
+3. Type a name you'll recognise (for example "My alerts") and paste the link.
+   Turn on **Mention @everyone** if you want everyone in the channel to get a
+   ping when a product comes back in stock. Then click **Add webhook**.
 4. Click the **⋯** button next to it and choose **Send test**. A test message
    should appear in your Discord channel within a few seconds.
 
@@ -112,7 +113,9 @@ Click your name at the bottom left and choose **Settings**.
 - **Notifications**: whether you get a message when a product comes back in
   stock (on by default) and when it sells out (off by default).
 - **Discord webhooks**: add more channels, send a test message, switch one off
-  or remove it.
+  or remove it. The **@everyone** switch makes back-in-stock alerts to that
+  channel ping everyone. "Sold out" messages never ping. With the switch on,
+  the test message pings too, so you can check that it works.
 - **Password**: change your password.
 
 You can also sign out from the same menu.

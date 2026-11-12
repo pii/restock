@@ -75,6 +75,10 @@ const MIGRATIONS: string[] = [
     ELSE available
   END;
   `,
+  // Per-webhook choice to ping @everyone in back-in-stock alerts.
+  `
+  ALTER TABLE webhooks ADD COLUMN mention_everyone INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 function migrate(db: Database.Database) {

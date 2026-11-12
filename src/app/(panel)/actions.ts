@@ -11,6 +11,7 @@ import {
   isDiscordWebhookUrl,
   sendTestMessage,
   setWebhookEnabled,
+  setWebhookMentionEveryone,
 } from "@/lib/notifications";
 import { CHECK_INTERVAL_LIMITS, updateSettings } from "@/lib/settings";
 import { STATUS_TEXT } from "@/lib/status";
@@ -139,7 +140,7 @@ export async function addWebhookAction(_prev: ActionResult, formData: FormData):
       message: "That isn't a Discord webhook URL. It should start with https://discord.com/api/webhooks/",
     };
   }
-  addWebhook(name.slice(0, 60), url);
+  addWebhook(name.slice(0, 60), url, formData.get("mentionEveryone") === "on");
   revalidatePath("/settings");
   return { ok: true, message: `Added “${name}”. Send a test to confirm it works.` };
 }
@@ -147,6 +148,12 @@ export async function addWebhookAction(_prev: ActionResult, formData: FormData):
 export async function setWebhookEnabledAction(id: number, enabled: boolean): Promise<void> {
   await requireUser();
   setWebhookEnabled(id, enabled);
+  revalidatePath("/settings");
+}
+
+export async function setWebhookMentionEveryoneAction(id: number, mentionEveryone: boolean): Promise<void> {
+  await requireUser();
+  setWebhookMentionEveryone(id, mentionEveryone);
   revalidatePath("/settings");
 }
 

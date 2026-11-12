@@ -46,6 +46,7 @@ import {
   saveIntervalAction,
   setNotificationRuleAction,
   setWebhookEnabledAction,
+  setWebhookMentionEveryoneAction,
   testWebhookAction,
   type ActionResult,
 } from "../actions";
@@ -186,6 +187,7 @@ export type WebhookView = {
   name: string;
   maskedUrl: string;
   enabled: boolean;
+  mentionEveryone: boolean;
   lastSentAt: number | null;
   lastError: string | null;
 };
@@ -236,6 +238,15 @@ function AddWebhookDialog() {
                 />
                 {error ? <FieldError>{error}</FieldError> : null}
               </Field>
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldLabel htmlFor="webhook-everyone">Mention @everyone</FieldLabel>
+                  <FieldDescription>
+                    Back-in-stock alerts ping everyone in the channel. Sell-out alerts never do.
+                  </FieldDescription>
+                </FieldContent>
+                <Switch id="webhook-everyone" name="mentionEveryone" />
+              </Field>
             </FieldGroup>
             <DialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0">
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
@@ -255,6 +266,7 @@ function AddWebhookDialog() {
 
 function WebhookRow({ hook, now }: { hook: WebhookView; now: number }) {
   const [enabled, setEnabled] = useState(hook.enabled);
+  const [everyone, setEveryone] = useState(hook.mentionEveryone);
   const [pending, start] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -277,6 +289,30 @@ function WebhookRow({ hook, now }: { hook: WebhookView; now: number }) {
         ) : (
           <span className="text-sm text-muted-foreground">Never</span>
         )}
+      </TableCell>
+      <TableCell>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {/* The wrapper keeps the tooltip working while the switch is disabled. */}
+            <span className="inline-flex">
+              <Switch
+                checked={everyone}
+                disabled={pending}
+                aria-label={`Mention @everyone in back-in-stock alerts to ${hook.name}`}
+                onCheckedChange={(next) => {
+                  setEveryone(next);
+                  start(async () => {
+                    await setWebhookMentionEveryoneAction(hook.id, next);
+                    toast(next ? `“${hook.name}” will ping @everyone` : `“${hook.name}” won't ping @everyone`, {
+                      description: next ? "Only back-in-stock alerts and test messages ping." : undefined,
+                    });
+                  });
+                }}
+              />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>Ping @everyone when a product comes back in stock</TooltipContent>
+        </Tooltip>
       </TableCell>
       <TableCell>
         <Switch
@@ -377,6 +413,7 @@ export function WebhooksCard({ webhooks, now }: { webhooks: WebhookView[]; now: 
                   <TableHead className="pl-4">Name</TableHead>
                   <TableHead>Endpoint</TableHead>
                   <TableHead>Last delivery</TableHead>
+                  <TableHead>@everyone</TableHead>
                   <TableHead>Enabled</TableHead>
                   <TableHead className="pr-4">
                     <span className="sr-only">Actions</span>
